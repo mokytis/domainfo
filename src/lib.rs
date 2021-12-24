@@ -38,7 +38,7 @@ impl fmt::Display for BGPToolsResponse {
     }
 }
 
-pub fn dns_lookup(domain: String) {
+pub fn dns_lookup(domain: &str) {
     let address = "8.8.8.8:53".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
@@ -54,7 +54,7 @@ pub fn dns_lookup(domain: String) {
                 prefix,
                 domain,
                 ip,
-                bgp_tools_query(ip.to_string())
+                bgp_tools_query(&ip.to_string())
             );
             prefix = "\n";
         };
@@ -64,7 +64,7 @@ pub fn dns_lookup(domain: String) {
                 prefix,
                 domain,
                 ip,
-                bgp_tools_query(ip.to_string())
+                bgp_tools_query(&ip.to_string())
             );
             prefix = "\n";
         };
@@ -88,11 +88,11 @@ pub fn detect_query_type(query: String) -> QueryType {
     }
 }
 
-pub fn bgp_tools_query(query: String) -> BGPToolsResponse {
+pub fn bgp_tools_query(query: &str) -> BGPToolsResponse {
     let mut stream = TcpStream::connect("bgp.tools:43").unwrap();
     let mut buffer = [0; 1024];
 
-    stream.write((query + "\n").as_bytes()).unwrap();
+    stream.write((query.to_owned() + "\n").as_bytes()).unwrap();
     stream.read(&mut buffer).unwrap();
 
     let parts = std::str::from_utf8(&buffer)
@@ -114,3 +114,4 @@ pub fn bgp_tools_query(query: String) -> BGPToolsResponse {
         as_name: String::from(parts[6]),
     }
 }
+
