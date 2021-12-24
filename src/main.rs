@@ -55,28 +55,25 @@ fn dns_lookup(domain: String) {
 
 fn detect_query_type(query: String) -> QueryType {
     let dot_count = query.matches(".").count();
-    if dot_count >= 1 {
-        // it at least 1 dot, count be IPv4 or domain name
-        if dot_count == 3 {
-            // has to have 3 dots to be ipv4
+    match dot_count {
+         0 => QueryType::IPAddr(query),
+         3 => {
             for s in query.split(".") {
                 match s.parse::<u32>() {
                     Ok(value) => {
                         if 255 < value {
-                            return QueryType::DomainName(query);
+                            return QueryType::DomainName(query)
                         }
                     }
                     Err(_) => {
                         return QueryType::DomainName(query);
                     }
-                };
+                }
             }
-            return QueryType::IPAddr(query);
-        }
-        return QueryType::DomainName(query);
+            QueryType::IPAddr(query)
+         }
+         _ => QueryType::DomainName(query),
     }
-    // if no dots, assume IPv6 address
-    QueryType::IPAddr(query)
 }
 
 fn bgp_tools_query(query: String) -> BGPToolsResponse {
