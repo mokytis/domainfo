@@ -70,19 +70,17 @@ fn detect_query_type(query: String) -> QueryType {
     match dot_count {
         0 => QueryType::IPAddr(query),
         3 => {
-            for s in query.split(".") {
-                match s.parse::<u32>() {
-                    Ok(value) => {
-                        if 255 < value {
-                            return QueryType::DomainName(query);
-                        }
-                    }
-                    Err(_) => {
-                        return QueryType::DomainName(query);
-                    }
-                }
+            if query
+                .split(".")
+                .filter_map(|x| x.parse::<u32>().ok())
+                .filter(|&x| x < 255)
+                .count()
+                == 4
+            {
+                QueryType::IPAddr(query)
+            } else {
+                QueryType::DomainName(query)
             }
-            QueryType::IPAddr(query)
         }
         _ => QueryType::DomainName(query),
     }
