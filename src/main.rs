@@ -1,7 +1,6 @@
 use std::fmt;
 use std::io::prelude::*;
 use std::net::TcpStream;
-use std::str::FromStr;
 use trust_dns_client::client::{Client, SyncClient};
 use trust_dns_client::op::DnsResponse;
 use trust_dns_client::rr::{DNSClass, Name, RData, Record, RecordType};
@@ -35,8 +34,7 @@ fn dns_lookup(domain: String) {
     let address = "8.8.8.8:53".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
-
-    let name = Name::from_str(&domain).unwrap();
+    let name = domain.parse::<Name>().unwrap();
     let response: DnsResponse = client.query(&name, DNSClass::IN, RecordType::A).unwrap();
 
     let answers: &[Record] = response.answers();
