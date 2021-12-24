@@ -1,6 +1,5 @@
 use domainfo;
 
-
 fn main() {
     let query = domainfo::detect_query_type(std::env::args().nth(1).expect("No query specified"));
     match query {

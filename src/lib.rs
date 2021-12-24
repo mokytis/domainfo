@@ -1,9 +1,9 @@
 pub mod domainfo {
-    pub enum QueryType{}
-    pub struct BGPToolsResponse{}
+    pub enum QueryType {}
+    pub struct BGPToolsResponse {}
     pub fn dns_lookup() {}
-    pub fn detect_query_type(){}
-    pub fn bgp_tools_query(){}
+    pub fn detect_query_type() {}
+    pub fn bgp_tools_query() {}
 }
 
 use std::fmt;
@@ -75,18 +75,14 @@ pub fn detect_query_type(query: String) -> QueryType {
     let dot_count = query.matches(".").count();
     match dot_count {
         0 => QueryType::IPAddr(query),
-        3 => {
-            if query
-                .split(".")
-                .filter_map(|x| x.parse::<u32>().ok())
-                .filter(|&x| x < 255)
-                .count()
-                == 4
-            {
-                QueryType::IPAddr(query)
-            } else {
-                QueryType::DomainName(query)
-            }
+        3 if query
+            .split(".")
+            .filter_map(|x| x.parse::<u32>().ok())
+            .filter(|&x| x < 255)
+            .count()
+            == 4 =>
+        {
+            QueryType::IPAddr(query)
         }
         _ => QueryType::DomainName(query),
     }
