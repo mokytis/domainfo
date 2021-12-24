@@ -2,6 +2,13 @@
 
 Show information about a Domain Name or IP Address.
 
+## Install
+
+If you have cargo installed, you can simply run `cargo
+install domainfo`, or use `cargo build --release` and add
+`./target/release/netinfo` to somewhere in your path
+(probably `/usr/local/bin`).
+
 ## Usage
 
 Simply run `domainfo <query>` where `query` is a Domain Name, or IP Address.
