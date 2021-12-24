@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::str::FromStr;
@@ -20,12 +21,13 @@ struct BGPToolsResponse {
     as_name: String,
 }
 
-impl BGPToolsResponse {
-    fn output(&self) {
-        println!(
+impl fmt::Display for BGPToolsResponse {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
             "{} ({}) is advertised by {} (AS{} {} {})",
             self.ip, self.prefix, self.as_name, self.asn, self.registry, self.country,
-        );
+        )
     }
 }
 
@@ -41,13 +43,23 @@ fn dns_lookup(domain: String) {
     let mut prefix = "";
     for ans in answers.iter() {
         if let &RData::A(ref ip) = ans.rdata() {
-            println!("{}{} has IPv4 {}", prefix, domain, ip);
-            bgp_tools_query(ip.to_string()).output();
+            println!(
+                "{}{} has IPv4 {}\n{}",
+                prefix,
+                domain,
+                ip,
+                bgp_tools_query(ip.to_string())
+            );
             prefix = "\n";
         };
         if let &RData::AAAA(ref ip) = ans.rdata() {
-            println!("{}{} has IPv6 {}", prefix, domain, ip);
-            bgp_tools_query(ip.to_string()).output();
+            println!(
+                "{}{} has IPv6 {}\n{}",
+                prefix,
+                domain,
+                ip,
+                bgp_tools_query(ip.to_string())
+            );
             prefix = "\n";
         };
     }
@@ -56,13 +68,13 @@ fn dns_lookup(domain: String) {
 fn detect_query_type(query: String) -> QueryType {
     let dot_count = query.matches(".").count();
     match dot_count {
-         0 => QueryType::IPAddr(query),
-         3 => {
+        0 => QueryType::IPAddr(query),
+        3 => {
             for s in query.split(".") {
                 match s.parse::<u32>() {
                     Ok(value) => {
                         if 255 < value {
-                            return QueryType::DomainName(query)
+                            return QueryType::DomainName(query);
                         }
                     }
                     Err(_) => {
@@ -71,8 +83,8 @@ fn detect_query_type(query: String) -> QueryType {
                 }
             }
             QueryType::IPAddr(query)
-         }
-         _ => QueryType::DomainName(query),
+        }
+        _ => QueryType::DomainName(query),
     }
 }
 
@@ -107,8 +119,7 @@ fn main() {
     let query = detect_query_type(std::env::args().nth(1).expect("No query specified"));
     match query {
         QueryType::IPAddr(q) => {
-            let response = bgp_tools_query(String::from(q));
-            response.output();
+            println!("{}", bgp_tools_query(String::from(q)));
         }
         QueryType::DomainName(q) => {
             dns_lookup(q);
