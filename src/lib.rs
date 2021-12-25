@@ -1,6 +1,6 @@
 pub mod domainfo {
     pub enum QueryType {}
-    pub struct BGPToolsResponse {}
+    pub struct IPAddress {}
     pub fn dns_lookup() {}
     pub fn detect_query_type() {}
     pub fn bgp_tools_query() {}
@@ -19,7 +19,7 @@ pub enum QueryType {
     IPAddr(String),
 }
 
-pub struct BGPToolsResponse {
+pub struct IPAddress {
     asn: u32,
     ip: String,
     prefix: String,
@@ -28,17 +28,37 @@ pub struct BGPToolsResponse {
     as_name: String,
 }
 
-impl fmt::Display for BGPToolsResponse {
+pub struct DomainName {
+    domain: String,
+    ipaddrs: Vec<IPAddress>,
+}
+
+impl fmt::Display for IPAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{} ({}) is advertised by {} (AS{} {} {})",
+            "{} ({}) is advertised by {} (AS{} {} {})\n",
             self.ip, self.prefix, self.as_name, self.asn, self.registry, self.country,
         )
     }
 }
 
-pub fn dns_lookup(domain: &str) {
+impl fmt::Display for DomainName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut prefix = "";
+        let mut response = String::from("");
+        for ipaddr in self.ipaddrs.iter() {
+            response += &format!(
+                "{}{} has IPAddr {}\n{}",
+                prefix, self.domain, ipaddr.ip, ipaddr
+            );
+            prefix = "\n";
+        }
+        write!(f, "{}", response)
+    }
+}
+
+pub fn dns_lookup(domain: &str) -> DomainName {
     let address = "8.8.8.8:53".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
@@ -46,28 +66,19 @@ pub fn dns_lookup(domain: &str) {
     let response: DnsResponse = client.query(&name, DNSClass::IN, RecordType::A).unwrap();
 
     let answers: &[Record] = response.answers();
-    let mut prefix = "";
+    let mut ipaddrs: Vec<IPAddress> = Vec::new();
     for ans in answers.iter() {
         if let &RData::A(ref ip) = ans.rdata() {
-            println!(
-                "{}{} has IPv4 {}\n{}",
-                prefix,
-                domain,
-                ip,
-                bgp_tools_query(&ip.to_string())
-            );
-            prefix = "\n";
+            ipaddrs.push(bgp_tools_query(&ip.to_string()));
         };
         if let &RData::AAAA(ref ip) = ans.rdata() {
-            println!(
-                "{}{} has IPv6 {}\n{}",
-                prefix,
-                domain,
-                ip,
-                bgp_tools_query(&ip.to_string())
-            );
-            prefix = "\n";
+            ipaddrs.push(bgp_tools_query(&ip.to_string()));
         };
+    }
+
+    DomainName {
+        domain: String::from(domain),
+        ipaddrs: ipaddrs,
     }
 }
 
@@ -88,7 +99,7 @@ pub fn detect_query_type(query: String) -> QueryType {
     }
 }
 
-pub fn bgp_tools_query(query: &str) -> BGPToolsResponse {
+pub fn bgp_tools_query(query: &str) -> IPAddress {
     let mut stream = TcpStream::connect("bgp.tools:43").unwrap();
     let mut buffer = [0; 1024];
 
@@ -105,7 +116,7 @@ pub fn bgp_tools_query(query: &str) -> BGPToolsResponse {
         .map(|&part| part.trim())
         .collect::<Vec<&str>>();
 
-    BGPToolsResponse {
+    IPAddress {
         asn: u32::from_str_radix(parts[0], 10).unwrap(),
         ip: String::from(parts[1]),
         prefix: String::from(parts[2]),
@@ -114,4 +125,3 @@ pub fn bgp_tools_query(query: &str) -> BGPToolsResponse {
         as_name: String::from(parts[6]),
     }
 }
-
